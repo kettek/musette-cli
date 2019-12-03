@@ -12,10 +12,14 @@ var (
 	playerView           tview.Primitive
 	playerControllerView tview.Primitive
 	playerList           PlayerList
+	logger               Logger
 )
 
 func main() {
 	app = tview.NewApplication()
+
+	logger.Setup()
+	logger.Log("Musette CLI v0 started")
 
 	playerList.Setup()
 
@@ -24,18 +28,20 @@ func main() {
 	createPlayer()
 
 	fullView := tview.NewGrid().
-		SetRows(0).
+		SetRows(0, 3).
 		SetColumns(20, 0).
 		SetBorders(true)
 
 	fullView.AddItem(browserView, 0, 0, 1, 1, 0, 0, true)
 	fullView.AddItem(playerView, 0, 1, 1, 1, 0, 0, true)
+	fullView.AddItem(logger.view, 1, 0, 1, 2, 0, 0, true)
 
 	pages := tview.NewPages().
 		AddPage("playerView", playerView, true, true).
 		AddPage("browserView", browserView, true, true).
 		AddPage("fullView", fullView, true, true).
 		AddPage("loginView", loginView, true, true).
+		AddPage("loggerView", logger.view, true, true).
 		SwitchToPage("fullView")
 
 	if err := app.SetRoot(pages, true).SetFocus(playerList.table).Run(); err != nil {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
@@ -13,6 +14,10 @@ type PlayerList struct {
 
 func (p *PlayerList) Setup() {
 	p.table = tview.NewTable().SetSelectable(true, false)
+
+	p.table.SetSelectedFunc(func(row, column int) {
+		logger.Log("Change current song to %s(row %d)", p.tracks[row].trackName, row)
+	})
 
 	// temp
 	for i := 0; i < 30; i++ {
