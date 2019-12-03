@@ -13,6 +13,7 @@ var (
 	playerControllerView tview.Primitive
 	playerList           PlayerList
 	logger               Logger
+	config               Config
 )
 
 func main() {
@@ -20,6 +21,12 @@ func main() {
 
 	logger.Setup()
 	logger.Log("Musette CLI v0 started")
+
+	config.LoadFromFile("musette.yaml")
+
+	if config.Server != "" {
+		logger.Log("Connecting to \"%s\"...", config.Server)
+	}
 
 	playerList.Setup()
 
