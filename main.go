@@ -11,11 +11,13 @@ var (
 	browserView          tview.Primitive
 	playerView           tview.Primitive
 	playerControllerView tview.Primitive
-	playerListView       tview.Primitive
+	playerList           PlayerList
 )
 
 func main() {
 	app = tview.NewApplication()
+
+	playerList.Setup()
 
 	createLogin()
 	createBrowser()
@@ -36,7 +38,7 @@ func main() {
 		AddPage("loginView", loginView, true, true).
 		SwitchToPage("fullView")
 
-	if err := app.SetRoot(pages, true).SetFocus(fullView).Run(); err != nil {
+	if err := app.SetRoot(pages, true).SetFocus(playerList.table).Run(); err != nil {
 		panic(err)
 	}
 }
@@ -91,13 +93,22 @@ func createLogin() {
 }
 
 func createBrowser() {
+	flex := tview.NewFlex().
+		SetDirection(tview.FlexRow)
+	location := tview.NewTextView().
+		SetText("location/a/place/you/know")
+
+	flex.AddItem(location, 0, 2, false)
+
 	rootDir := "."
 	root := tview.NewTreeNode(rootDir).SetColor(tcell.ColorRed)
 	boot := tview.NewTreeNode("..").SetColor(tcell.ColorRed)
 	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
 	root.AddChild(boot)
 
-	browserView = tree
+	flex.AddItem(tree, 0, 16, true)
+
+	browserView = flex
 }
 
 func createPlayer() {
@@ -106,10 +117,9 @@ func createPlayer() {
 		SetColumns(0)
 
 	createPlayerController()
-	createPlayerList()
 
 	grid.AddItem(playerControllerView, 0, 0, 1, 1, 0, 0, true)
-	grid.AddItem(playerListView, 1, 0, 1, 1, 0, 0, true)
+	grid.AddItem(playerList.table, 1, 0, 1, 1, 0, 0, true)
 
 	playerView = grid
 }
@@ -122,10 +132,11 @@ func createPlayerController() {
 	playerControllerView = text
 }
 
-func createPlayerList() {
-	table := tview.NewTable()
+/*func createPlayerList() {
+	table := tview.NewTable().
+		SetSelectable(true, false)
 
-	for r := 0; r < 18; r++ {
+	for r := 0; r < 99; r++ {
 		for c := 0; c < 5; c++ {
 			color := tcell.ColorWhite
 
@@ -134,7 +145,7 @@ func createPlayerList() {
 				SetAlign(tview.AlignLeft)
 			switch c {
 			case 0:
-				cell.SetText("00")
+				cell.SetText(fmt.Sprintf("%d", r))
 			case 1:
 				cell.SetText("track name")
 				cell.SetExpansion(100)
@@ -151,4 +162,4 @@ func createPlayerList() {
 	}
 
 	playerListView = table
-}
+}*/
