@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 
 	"github.com/gdamore/tcell"
@@ -10,6 +12,7 @@ import (
 
 var (
 	app                  *tview.Application
+	httpClient           *http.Client
 	loginView            tview.Primitive
 	browserView          tview.Primitive
 	playerView           tview.Primitive
@@ -24,6 +27,13 @@ var (
 func main() {
 	app = tview.NewApplication()
 
+	// Set up http client
+	cookieJar, _ := cookiejar.New(nil)
+	httpClient = &http.Client{
+		Jar: cookieJar,
+	}
+
+	// Set up UI
 	logger.Setup()
 	logger.Log("Musette CLI v0 started")
 
