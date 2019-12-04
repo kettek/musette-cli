@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"net/url"
+
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
@@ -12,8 +15,10 @@ var (
 	playerView           tview.Primitive
 	playerControllerView tview.Primitive
 	playerList           PlayerList
+	connect              Connect
 	logger               Logger
 	config               Config
+	pages                *tview.Pages
 )
 
 func main() {
@@ -22,11 +27,9 @@ func main() {
 	logger.Setup()
 	logger.Log("Musette CLI v0 started")
 
-	config.LoadFromFile("musette.yaml")
+	connect.Setup()
 
-	if config.Server != "" {
-		logger.Log("Connecting to \"%s\"...", config.Server)
-	}
+	config.LoadFromFile("musette.yaml")
 
 	playerList.Setup()
 
@@ -43,15 +46,23 @@ func main() {
 	fullView.AddItem(playerView, 0, 1, 1, 1, 0, 0, true)
 	fullView.AddItem(logger.view, 1, 0, 1, 2, 0, 0, true)
 
-	pages := tview.NewPages().
+	pages = tview.NewPages().
 		AddPage("playerView", playerView, true, true).
 		AddPage("browserView", browserView, true, true).
 		AddPage("fullView", fullView, true, true).
 		AddPage("loginView", loginView, true, true).
 		AddPage("loggerView", logger.view, true, true).
+		AddPage("connectView", connect.view, true, true).
 		SwitchToPage("fullView")
 
-	if err := app.SetRoot(pages, true).SetFocus(playerList.table).Run(); err != nil {
+	if config.Server != "" {
+		connectTo(config.Server)
+	} else {
+		pages.SwitchToPage("connectView")
+		app.SetFocus(connect.view)
+	}
+
+	if err := app.SetRoot(pages, true).Run(); err != nil {
 		panic(err)
 	}
 }
@@ -88,7 +99,33 @@ func createLogin() {
 
 	loginButton = tview.NewButton("Login").
 		SetSelectedFunc(func() {
-			app.Stop()
+			resp := struct {
+				Status  int16
+				Message string
+			}{}
+
+			err := postAPI(fmt.Sprintf("%s/api/auth/login", config.Server), url.Values{
+				"username": {userField.GetText()},
+				"password": {passwordField.GetText()},
+			}, &resp)
+
+			if err != nil {
+				logger.Log("argh: %v+", err)
+				//pages.SwitchToPage("connectView")
+				pages.SwitchToPage("loggerView")
+				return
+			}
+			// TODO: Check if 401 && INVALID
+			if resp.Status == 401 {
+				logger.Log("still invalid")
+			} else if resp.Status == 200 {
+				logger.Log("Successfully connected.")
+				pages.SwitchToPage("fullView")
+			} else {
+				logger.Log("what: %+v", resp)
+				pages.SwitchToPage("loggerView")
+			}
+
 		})
 	loginButton.SetInputCapture(func(e *tcell.EventKey) *tcell.EventKey {
 		if e.Key() == tcell.KeyUp {
