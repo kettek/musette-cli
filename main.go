@@ -14,10 +14,10 @@ var (
 	app                  *tview.Application
 	httpClient           *http.Client
 	loginView            tview.Primitive
-	browserView          tview.Primitive
 	playerView           tview.Primitive
 	playerControllerView tview.Primitive
 	playerList           PlayerList
+	browser              Browser
 	connect              Connect
 	logger               Logger
 	config               Config
@@ -37,6 +37,8 @@ func main() {
 	logger.Setup()
 	logger.Log("Musette CLI v0 started")
 
+	browser.Setup()
+
 	connect.Setup()
 
 	config.LoadFromFile("musette.yaml")
@@ -44,7 +46,6 @@ func main() {
 	playerList.Setup()
 
 	createLogin()
-	createBrowser()
 	createPlayer()
 
 	fullView := tview.NewGrid().
@@ -52,13 +53,13 @@ func main() {
 		SetColumns(20, 0).
 		SetBorders(true)
 
-	fullView.AddItem(browserView, 0, 0, 1, 1, 0, 0, true)
+	fullView.AddItem(browser.view, 0, 0, 1, 1, 0, 0, true)
 	fullView.AddItem(playerView, 0, 1, 1, 1, 0, 0, true)
 	fullView.AddItem(logger.view, 1, 0, 1, 2, 0, 0, true)
 
 	pages = tview.NewPages().
 		AddPage("playerView", playerView, true, true).
-		AddPage("browserView", browserView, true, true).
+		AddPage("browserView", browser.view, true, true).
 		AddPage("fullView", fullView, true, true).
 		AddPage("loginView", loginView, true, true).
 		AddPage("loggerView", logger.view, true, true).
@@ -130,6 +131,7 @@ func createLogin() {
 				logger.Log("still invalid")
 			} else if resp.Status == 200 {
 				logger.Log("Successfully connected.")
+				browser.Open("/")
 				pages.SwitchToPage("fullView")
 			} else {
 				logger.Log("what: %+v", resp)
@@ -150,25 +152,6 @@ func createLogin() {
 	container.AddItem(loginButton, 2, 0, 1, 1, 0, 0, true)
 
 	loginView = container
-}
-
-func createBrowser() {
-	flex := tview.NewFlex().
-		SetDirection(tview.FlexRow)
-	location := tview.NewTextView().
-		SetText("location/a/place/you/know")
-
-	flex.AddItem(location, 0, 2, false)
-
-	rootDir := "."
-	root := tview.NewTreeNode(rootDir).SetColor(tcell.ColorRed)
-	boot := tview.NewTreeNode("..").SetColor(tcell.ColorRed)
-	tree := tview.NewTreeView().SetRoot(root).SetCurrentNode(root)
-	root.AddChild(boot)
-
-	flex.AddItem(tree, 0, 16, true)
-
-	browserView = flex
 }
 
 func createPlayer() {
